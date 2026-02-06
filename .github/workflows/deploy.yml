@@ -1,0 +1,33 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build (if package.json exists)
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            npm run build
+            echo "OUTPUT_DIR=dist" >> $GITHUB_ENV
+          else
+            echo "OUTPUT_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: e32c85c238694b9d1ba43e3c7b69703d
+          command: pages deploy ${{ env.OUTPUT_DIR }} --project-name=novabot-me
